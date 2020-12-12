@@ -2,6 +2,7 @@
   <div>
     <h2>Add Product</h2>
     <form class="ui form" @submit.prevent="submitProduct" :load="onload">
+      <!-- product name field -->
       <div class="required field">
         <label for="name">Product Name</label>
         <input
@@ -13,18 +14,23 @@
           required
         />
       </div>
+      <!-- product price field -->
       <div class="three fields">
         <div class="required field">
           <label for="price">Product Price</label>
-          <input
-            type="number"
-            id="price"
-            name="price"
-            placeholder="Product Price"
-            autocomplete="off"
-            required
-          />
+          <div class="ui right labeled input">
+            <input
+              type="number"
+              id="price"
+              name="price"
+              placeholder="Kyats"
+              autocomplete="off"
+              required
+            />
+            <label for="price" class="ui label">MMK</label>
+          </div>
         </div>
+        <!-- product category field -->
         <div class="field">
           <label for="category">Catagory</label>
           <select name="category" id="category" class="ui search dropdown">
@@ -39,71 +45,132 @@
           </select>
         </div>
       </div>
+      <!-- product images upload file -->
+      <div class="field">
+        <label for="images">
+          <div class="ui image placeholder segment">
+            <div class="ui icon header">
+              <i class="file image outline icon"></i> Upload an image
+            </div>
+          </div>
+        </label>
+        <input
+          type="file"
+          name="images"
+          id="images"
+          accept="image/png,image/jgp,image/jpeg"
+          @change="previewImages($event)"
+          multiple
+        />
+      </div>
+      <!-- form submit button -->
       <button class="ui fluid button primary" type="submit">Save</button>
     </form>
   </div>
 </template>
 
 <script>
-import { products } from "@/firebase";
+import { database, products, storage } from "@/firebase";
 
-const createProduct = (completed, elements) => {
+const data = {
+  files: [],
+  categories: [],
+  resetImage: () => null,
+};
+
+const createProduct = (uid, createdAt, elements, onComplete) => {
   let product = {
-    name: null,
-    category: null,
-    description: null,
-    price: null,
-    stocks: null,
-    createdAt: null,
-    images: []
+    uid,
+    name: elements.name.value,
+    category: elements.category.value,
+    description: "", // elements.description.value,
+    price: Number(elements.price.value),
+    stocks: 0,
+    createdAt: createdAt.getTime(),
+    minAge: 0,
+    maxAge: 0,
+    images: [],
   };
 
-  Object.keys(product).forEach((key) => {
-    product[key] = elements[key].value;
-  });
+  let saveToFirebase = (product) =>
+    products
+      .doc()
+      .set(product)
+      .then(() => onComplete());
 
-  products
-    .doc()
-    .set(product)
-    .then(() => completed());
+  if (elements.images.files) {
+    let loaded = 0;
+    elements.images.files.forEach((file) => {
+      let ext;
+      switch (file.type) {
+        case "image/jpg":
+        case "image/jpeg":
+          ext = "jpg";
+          break;
+        case "image/png":
+          ext = "png";
+          break;
+        default:
+          ext = file.name.split(".")[1];
+      }
+      let y = createdAt.getYear() - 100;
+      let m = createdAt.getMonth() + 1;
+      let path = `products/${y}/${m}/${product.createdAt}-${uid}.${ext}`;
+      storage
+        .child(path)
+        .put(file)
+        .then(() => {
+          loaded++;
+          product.images.push(path);
+          if (elements.images.files.length === loaded) {
+            return saveToFirebase(product);
+          }
+        });
+    });
+  } else {
+    completed();
+  }
 };
+
+database.get().then((ref) => (data.categories = ref.data().categories));
 
 export default {
   name: "ProductForm",
 
-  props: ["categories"],
+  data() {
+    return data;
+  },
 
   methods: {
-    submitProduct(event) {
-      let elements = event.target.elements;
-      event.target.classList.add("loading");
+    previewImages(event) {
+      let files = event.target.files;
+      let el = event.target.parentElement.querySelector(".image");
+      if (files.length === 0) {
+        return this.resetImage();
+      }
+      let reader = new FileReader();
+      let placeholder = el.innerHTML;
+      this.resetImage = () => (el.innerHTML = placeholder);
+      reader.onload = (event) =>
+        (el.innerHTML = `<img class="ui small image bordered centered" src="${event.target.result}" />`);
+      reader.readAsDataURL(files[0]);
+    },
 
+    submitProduct(event) {
+      event.target.classList.add("loading");
       fetch(
         "https://ethereal-demo-link.netlify.app/.netlify/functions/timestamp"
       )
         .then((res) => res.text())
         .then((timestamp) => {
-          elements.createdAt = {
-            name: "createdAt",
-            value: Number(timestamp),
-          };
-          elements.stocks = {
-            name: "stocks",
-            value: 0,
-          };
-          elements.images = {
-            name: "images",
-            value: [],
-          };
-          elements.description = {
-            name: "description",
-            value: null,
-          };
-          let complete = () => {
+          let now = new Date();
+          now.setTime(timestamp);
+
+          createProduct(this.$attrs.uid, now, event.target.elements, () => {
+            this.resetImage();
             event.target.classList.remove("loading");
             event.target.reset();
-          };
-          createProduct(complete, elements);
+          });
         });
     },
   },
@@ -131,11 +198,13 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-label[for="price"]::after {
-  content: "kyats" !important;
-  color: #c2c2c2 !important;
-  letter-spacing: 1px;
-  padding-top: 0.2rem;
-  padding-left: 0.2rem;
+input[type="file"] {
+  height: 0;
+  width: 0;
+  visibility: hidden !important;
+}
+
+.ui.image.placeholder {
+  cursor: pointer;
 }
 </style>

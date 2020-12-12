@@ -18,6 +18,12 @@ export const database = firebase
   .collection("databases")
   .doc(DATABASE_NAME);
 
-export const storage = firebase.storage().ref();
+export const storage = firebase
+  .storage()
+  .ref()
+  .child("databases")
+  .child(DATABASE_NAME);
+
+export const auth = firebase.auth();
 
 export const products = database.collection("products");

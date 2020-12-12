@@ -9,30 +9,31 @@
         <span class="price">{{ price.toLocaleString() }}</span>
       </div>
       <div class="description">
-        <p v-if="stock">Stock: {{ stock }}</p>
+        <p v-if="stocks">Stock: {{ stocks }}</p>
         <p>{{ description }}</p>
         <small>Created at {{ new Date(createdAt).toLocaleString() }}</small>
       </div>
+      <div class="ui label" v-if="category">{{ category }}</div>
     </div>
     <div class="extra">
-      <div class="ui right floated primary button">
-        Edit
-        <i class="right chevron icon"></i>
-      </div>
-      <!-- <div class="ui label">Limited</div> -->
+      <slot></slot>
     </div>
+    <hr />
   </div>
 </template>
 
-
 <script>
-import { DATABASE_NAME } from "@/firebase";
-
-// const storageRef = (`database/${DATABASE_NAME}/products`);
-
 export default {
   name: "ProductList",
-  props: ["name", "photoURL", "price", "description", "stock", "createdAt"],
+  props: [
+    "name",
+    "photoURL",
+    "price",
+    "description",
+    "stocks",
+    "createdAt",
+    "category",
+  ],
 };
 </script>
 
@@ -42,9 +43,11 @@ export default {
   padding-right: 4px;
 }
 
-@media only screen and (min-width: 768px) {
-  .content {
-    min-width: fit-content !important;
-  }
+.description {
+  padding-bottom: 10px;
+}
+
+.content {
+  min-width: fit-content !important;
 }
 </style>

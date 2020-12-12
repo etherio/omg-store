@@ -15,10 +15,7 @@
     </div>
     <div class="ui main container">
       <div v-if="loggedIn">
-        <router-view
-          :products="products"
-          :categories="categories"
-        ></router-view>
+        <router-view :user="user"></router-view>
       </div>
       <div v-else class="ui login container">
         <LoginForm />
@@ -28,55 +25,19 @@
 </template>
 
 <script>
+import { auth } from "./firebase";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
-import { database, products } from "./firebase";
 
 const data = {
   user: null,
   loggedIn: false,
   loaded: false,
-  products: [],
-  categories: [],
 };
 
-firebase.auth().onAuthStateChanged((user) => {
-  data.user = user;
+auth.onAuthStateChanged((user) => {
+  data.user = user.toJSON();
   data.loggedIn = Boolean(user);
-  data.loaded = true;
-
-  if (user) {
-    try {
-      database.get().then((ref) => {
-        let _data = ref.data();
-        data.categories = _data.categories;
-      });
-      products
-        .orderBy("createdAt", "desc")
-        .get()
-        .then((docRef) => {
-          docRef.forEach((ref) => {
-            let product = ref.data();
-            product.id = ref.ref.id;
-            product.photoURL = null;
-            var image = product.images[0];
-            if (image) {
-              firebase
-                .storage()
-                .ref()
-                .child(image)
-                .getDownloadURL()
-                .then((url) => (product.photoURL = url));
-            } else {
-              product.photoURL = "/assets/image.png";
-            }
-            data.products.push(product);
-          });
-        });
-    } catch (e) {
-      console.error(e);
-    }
-  }
   data.loaded = true;
 });
 

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <ProductForm :categories="categories" />
+    <ProductForm :uid="user.uid" />
   </div>
 </template>
 
@@ -10,7 +10,7 @@ import ProductForm from "@/components/ProductForm.vue";
 
 export default {
   name: "Home",
-  props: ["categories"],
+  props: ["user"],
   components: {
     ContentLoader,
     ProductForm,
