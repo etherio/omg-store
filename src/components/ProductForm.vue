@@ -55,6 +55,7 @@ const createProduct = (completed, elements) => {
     price: null,
     stocks: null,
     createdAt: null,
+    images: []
   };
 
   Object.keys(product).forEach((key) => {
