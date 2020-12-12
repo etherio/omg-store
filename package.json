@@ -1,14 +1,20 @@
 {
-  "name": "static",
+  "name": "OMG",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build"
   },
   "dependencies": {
+    "ansi-wrap": "^0.1.0",
+    "axios": "^0.21.0",
+    "bootstrap": "^4.5.3",
     "core-js": "^3.6.5",
+    "firebase": "^8.1.2",
     "vue": "^2.6.11",
+    "vue-content-loader": "^0.2.3",
     "vue-router": "^3.2.0"
   },
   "devDependencies": {

@@ -1,18 +1,19 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div>
+    <ProductForm :categories="categories" />
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from '@/components/HelloWorld.vue'
+import { ContentLoader } from "vue-content-loader";
+import ProductForm from "@/components/ProductForm.vue";
 
 export default {
-  name: 'Home',
+  name: "Home",
+  props: ["categories"],
   components: {
-    HelloWorld
-  }
-}
+    ContentLoader,
+    ProductForm,
+  },
+};
 </script>
