@@ -36,8 +36,9 @@ const data = {
 };
 
 auth.onAuthStateChanged((user) => {
-  data.user = user.toJSON();
-  data.loggedIn = Boolean(user);
+  if ((data.loggedIn = Boolean(user))) {
+    data.user = user.toJSON();
+  }
   data.loaded = true;
 });
 
