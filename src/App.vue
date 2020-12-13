@@ -2,15 +2,14 @@
   <main v-if="loaded">
     <div class="ui fixed inverted menu">
       <div class="ui container">
-        <a href="#" class="header item">
-          <img
-            src="https://semantic-ui.com/examples/assets/images/logo.png"
-            class="logo"
-          />
-          OMG Admin
-        </a>
+        <a href="#" class="header item">OMG</a>
         <router-link to="/" class="item">Home</router-link>
-        <router-link to="/product" class="item">Product</router-link>
+        <router-link to="/products" class="item">Products</router-link>
+        <!-- <router-link to="/outofstocks" class="item">Out of stocks</router-link> -->
+        <div class="right menu">
+            <a href="#" class="item bold" @click="signOut()">Logout</a>
+          </div>
+        </div>
       </div>
     </div>
     <div class="ui main container">
@@ -49,6 +48,11 @@ export default {
   components: {
     LoginForm,
     Dashboard,
+  },
+  methods: {
+    signOut() {
+      auth.signOut();
+    },
   },
 };
 </script>

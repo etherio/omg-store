@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2>Add Product</h2>
-    <form class="ui form" @submit.prevent="submitProduct" :load="onload">
+    <form class="ui form" @submit.prevent="submitProduct">
       <!-- product name field -->
       <div class="required field">
         <label for="name">Product Name</label>
@@ -33,16 +33,45 @@
         <!-- product category field -->
         <div class="field">
           <label for="category">Catagory</label>
-          <select name="category" id="category" class="ui search dropdown">
-            <option value="" disabled selected>Select Category</option>
-            <option
-              v-for="category in categories"
-              :value="category"
-              :key="category"
-            >
-              {{ category }}
-            </option>
-          </select>
+          <div class="ui search" id="category">
+            <div class="ui icon input">
+              <i class="tag icon"></i>
+              <input
+                class="prompt"
+                name="category"
+                type="text"
+                placeholder="Product Category"
+              />
+            </div>
+            <div class="results"></div>
+          </div>
+        </div>
+      </div>
+      <!-- product age field -->
+      <div class="three fields">
+        <div class="field">
+          <div class="ui left labeled input">
+            <label for="minAge" class="ui label">min</label>
+            <input
+              type="tel"
+              id="minAge"
+              name="minAge"
+              placeholder="Age Group"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui left labeled input">
+            <label for="maxAge" class="ui label">max</label>
+            <input
+              type="tel"
+              id="maxAge"
+              name="maxAge"
+              placeholder="Age Group"
+              autocomplete="off"
+            />
+          </div>
         </div>
       </div>
       <!-- product images upload file -->
@@ -60,7 +89,6 @@
           id="images"
           accept="image/png,image/jgp,image/jpeg"
           @change="previewImages($event)"
-          multiple
         />
       </div>
       <!-- form submit button -->
@@ -73,10 +101,10 @@
 import { database, products, storage } from "@/firebase";
 
 const data = {
-  files: [],
-  categories: [],
   resetImage: () => null,
 };
+
+let categories = [];
 
 const createProduct = (uid, createdAt, elements, onComplete) => {
   let product = {
@@ -87,18 +115,30 @@ const createProduct = (uid, createdAt, elements, onComplete) => {
     price: Number(elements.price.value),
     stocks: 0,
     createdAt: createdAt.getTime(),
-    minAge: 0,
-    maxAge: 0,
+    minAge: Number(elements.minAge.value),
+    maxAge: Number(elements.maxAge.value),
     images: [],
   };
 
-  let saveToFirebase = (product) =>
+  let saveToFirebase = (product) => {
+    if (product.category && !categories.includes(product.category)) {
+      categories.push(product.category);
+      database.update({
+        categories,
+      });
+      $("#category").search({
+        source: categories.map((category) => {
+          return { title: category };
+        }),
+      });
+    }
     products
       .doc()
       .set(product)
       .then(() => onComplete());
+  };
 
-  if (elements.images.files) {
+  if (elements.images.files.length) {
     let loaded = 0;
     elements.images.files.forEach((file) => {
       let ext;
@@ -128,11 +168,9 @@ const createProduct = (uid, createdAt, elements, onComplete) => {
         });
     });
   } else {
-    completed();
+    saveToFirebase(product);
   }
 };
-
-database.get().then((ref) => (data.categories = ref.data().categories));
 
 export default {
   name: "ProductForm",
@@ -174,17 +212,16 @@ export default {
         });
     },
   },
-
-  computed: {
-    onload() {
-      var script = document.createElement("script");
-      script.src =
-        "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js";
-      script.addEventListener("load", () => $("#category").dropdown());
-      document.body.appendChild(script);
-    },
-  },
 };
+
+database.get().then((ref) => {
+  categories = ref.data().categories;
+  $("#category").search({
+    source: categories.map((category) => {
+      return { title: category };
+    }),
+  });
+});
 </script>
 
 <style>
@@ -206,5 +243,9 @@ input[type="file"] {
 
 .ui.image.placeholder {
   cursor: pointer;
+}
+
+form {
+  margin-bottom: 20px;
 }
 </style>

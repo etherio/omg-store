@@ -1,49 +1,22 @@
 <template>
   <div>
-    <h2>Product [In-stocks]</h2>
-    <div
-      class="ui divided items"
-      :key="product.id"
-      v-for="product in productInStocks"
-    >
-      <ProductList
-        :name="product.name"
-        :description="product.description"
-        :price="product.price"
-        :photoURL="product.photoURL"
-        :stocks="product.stocks"
-        :createdAt="product.createdAt"
-        :category="product.category"
+    <h1>Products</h1>
+    <div class="ui three item menu">
+      <a class="item" :href="$router.resolve({ name: 'Products' }).href"
+        >In-Stock</a
       >
-        <div class="ui right floated">
-          <button
-            class="ui primary basic button"
-            @click="addStock($event, product.id)"
-          >
-            <i class="left plus icon"></i>
-            Add
-          </button>
-          <button
-            class="ui primary basic button"
-            @click="soldOut($event, product.id)"
-          >
-            <i class="left dolly icon"></i>
-            Sold
-          </button>
-          <button class="ui primary button">
-            <i class="left edit icon"></i>
-            Edit
-          </button>
-        </div>
-      </ProductList>
+      <a
+        class="item active"
+        :href="$router.resolve({ name: 'OutOfStocks' }).href"
+        >Out of stock</a
+      >
+      <span class="item"> </span>
     </div>
-    <br />
-    <div v-if="productOutOfStocks.length">
-      <h2>Product [Out of stocks]</h2>
+    <div v-if="products.length">
       <div
+        v-for="product in products"
         class="ui divided items"
         :key="product.id"
-        v-for="product in productOutOfStocks"
       >
         <ProductList
           :name="product.name"
@@ -54,13 +27,38 @@
           :createdAt="product.createdAt"
           :category="product.category"
         >
-          <button
-            class="ui right floated red button"
-            @click="deleteProduct($event, product.id)"
-          >
-            <i class="left trash alternate icon"></i> Delete
-          </button>
+          <div class="ui right floated">
+            <button
+              class="ui primary basic button"
+              @click="addStock($event, product.id)"
+            >
+              <i class="left plus icon"></i>
+              Add
+            </button>
+            <button
+              class="ui primary basic button"
+              @click="soldOut($event, product.id)"
+            >
+              <i class="left dolly icon"></i>
+              Sold
+            </button>
+            <button
+              class="ui red button"
+              @click="deleteProduct($event, product.id)"
+            >
+              <i class="left edit icon"></i>
+              Edit
+            </button>
+          </div>
         </ProductList>
+      </div>
+    </div>
+    <div v-else>
+      <div class="ui placeholder segment">
+        <div class="ui icon header">
+          <i class="inbox icon"></i>
+          No products found.
+        </div>
       </div>
     </div>
   </div>
@@ -71,40 +69,32 @@ import ProductList from "@/components/ProductList.vue";
 import { products, storage } from "@/firebase";
 import { ContentLoader } from "vue-content-loader";
 
-const productRefs = {};
-
 const data = {
-  productInStocks: [],
-  productOutOfStocks: [],
+  products: [],
 };
 
-products
-  .orderBy("createdAt", "desc")
-  .get()
-  .then((docRef) => {
-    docRef.forEach((ref) => {
-      let product = ref.data();
-      let images = product.images;
-      productRefs[ref.ref.id] = ref.ref;
-      productRefs[ref.ref.id]["data"] = product;
-      product.id = ref.ref.id;
-      product.photoURL = null;
-      if (images.length > 0) {
-        let image = storage.child(images[0]);
-        image.getDownloadURL().then((url) => (product.photoURL = url));
-      } else {
-        product.photoURL = "/assets/image.png";
-      }
-      if (product.stocks) {
-        data.productInStocks.push(product);
-      } else {
-        data.productOutOfStocks.push(product);
-      }
-    });
+let productRefs = {};
+
+const convertRef = (vm, dr) => {
+  dr.forEach((r) => {
+    let p = r.data();
+    let im = p.images;
+    productRefs[r.ref.id] = r.ref;
+    productRefs[r.ref.id]["data"] = p;
+    p.id = r.ref.id;
+    p.photoURL = null;
+    if (im.length > 0) {
+      let img = storage.child(im[0]);
+      img.getDownloadURL().then((url) => (p.photoURL = url));
+    } else {
+      p.photoURL = "/assets/image.png";
+    }
+    vm.products.push(p);
   });
+};
 
 export default {
-  name: "Product",
+  name: "OutOfStocks",
   props: ["users"],
   data() {
     return data;
@@ -173,8 +163,8 @@ export default {
         el.classList.add("loading");
         el.setAttribute("disabled", true);
         productRefs[id].delete().then(() => {
-          let i = this.productOutOfStocks.findIndex((p) => p.id == id);
-          delete this.productOutOfStocks[i];
+          let i = this.products.findIndex((p) => p.id == id);
+          delete this.products[i];
           p.remove();
         });
       } catch (e) {
@@ -185,4 +175,9 @@ export default {
     },
   },
 };
+
+products
+  .where("stocks", "=", 0)
+  .get()
+  .then((ref) => convertRef(data, ref));
 </script>

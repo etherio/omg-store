@@ -11,14 +11,14 @@
       <div class="ui large form my-10 p-10">
         <div class="ui stacked segment">
           <button
-            class="ui fluid large red submit button mt-6"
+            class="ui fluid large google plus submit button mt-6"
             @click="signInWithGoogle()"
           >
             <i class="fa fa-google mr-4"></i> Log In with Google
           </button>
 
           <button
-            class="ui fluid large blue active submit button mt-6"
+            class="ui fluid large facebook active submit button mt-6"
             @click="signInWithFacebook()"
           >
             <i class="fa fa-facebook bl mr-4"></i> Log In with Facebook
