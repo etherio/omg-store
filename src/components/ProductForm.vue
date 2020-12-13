@@ -323,7 +323,6 @@ export default {
         .then((timestamp) => {
           let onComplete = () => {
             this.resetImage();
-            loader.remove();
             target.reset();
             target.classList.remove("loading");
           };

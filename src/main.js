@@ -16,7 +16,9 @@ auth.onAuthStateChanged((user) => {
   data.loaded = true;
 });
 
-const app = new Vue({
+Vue.config.productionTip = false;
+
+new Vue({
   router,
   data,
   render: (h) => h(App),
