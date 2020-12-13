@@ -10,10 +10,14 @@
       </div>
       <div class="description">
         <p v-if="stocks">Stock: {{ stocks }}</p>
-        <p>{{ description }}</p>
         <small>Created at {{ new Date(createdAt).toLocaleString() }}</small>
+        <p>{{ description }}</p>
       </div>
-      <div class="ui label" v-if="category">{{ category }}</div>
+      <div class="ui blue label" v-if="category">{{ category }}</div>
+      <div class="ui label" :class="color.toLowerCase()" v-if="color">
+        {{ color }}
+      </div>
+      <div class="ui label" v-if="size">{{ size }}</div>
     </div>
     <div class="extra">
       <slot></slot>
@@ -33,6 +37,8 @@ export default {
     "stocks",
     "createdAt",
     "category",
+    "size",
+    "color",
   ],
 };
 </script>

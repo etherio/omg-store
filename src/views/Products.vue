@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :load="onLoad">
     <h1>Products</h1>
     <div class="ui three item menu">
       <a class="item active" :href="$router.resolve({ name: 'Products' }).href"
@@ -24,6 +24,8 @@
           :stocks="product.stocks"
           :createdAt="product.createdAt"
           :category="product.category"
+          :color="product.color"
+          :size="product.size"
         >
           <div class="ui right floated">
             <button
@@ -40,19 +42,34 @@
               <i class="left dolly icon"></i>
               Sold
             </button>
-            <button
-              class="ui red button"
-              @click="deleteProduct($event, product.id)"
-            >
-              <i class="left edit icon"></i>
-              Edit
-            </button>
           </div>
         </ProductList>
+        <hr />
       </div>
     </div>
     <div v-else>
-      <div class="ui placeholder segment">
+      <div v-if="loading">
+        <div class="ui fluid card">
+          <div class="content">
+            <div style="display: grid; grid-template-columns: 220px auto">
+              <div
+                class="ui fluid placeholder"
+                style="width: 200px; height: 200px"
+              >
+                <div class="square image"></div>
+              </div>
+              <div class="content">
+                <div class="ui placeholder">
+                  <div class="line"></div>
+                  <div class="line"></div>
+                  <div class="line"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="ui placeholder segment">
         <div class="ui icon header">
           <i class="inbox icon"></i>
           No products are found.
@@ -65,40 +82,42 @@
 <script>
 import ProductList from "@/components/ProductList.vue";
 import { products, storage } from "@/firebase";
-import { ContentLoader } from "vue-content-loader";
-
-const data = {
-  products: [],
-};
 
 let productRefs = {};
 
-const convertRef = (vm, dr) => {
-  dr.forEach((r) => {
-    let p = r.data();
-    let im = p.images;
-    productRefs[r.ref.id] = r.ref;
-    productRefs[r.ref.id]["data"] = p;
-    p.id = r.ref.id;
-    p.photoURL = null;
-    if (im.length > 0) {
-      let img = storage.child(im[0]);
-      img.getDownloadURL().then((url) => (p.photoURL = url));
-    } else {
-      p.photoURL = "/assets/image.png";
-    }
-    vm.products.push(p);
-  });
+const convertData = (docRef) => {
+  let product = docRef.data();
+  let images = product.images;
+  productRefs[docRef.ref.id] = docRef.ref;
+  productRefs[docRef.ref.id]["data"] = product;
+  product.id = docRef.ref.id;
+  product.photoURL = null;
+  if (images.length > 0) {
+    let image = storage.child(images[0]);
+    image.getDownloadURL().then((url) => (product.photoURL = url));
+  } else {
+    product.photoURL = "/assets/image.png";
+  }
+  return product;
+};
+
+const convertRef = (app, ref) => {
+  let products = [];
+  ref.forEach((docRef) => products.push(convertData(docRef)));
+  products = products.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+  app.products = products;
+  app.loading = false;
 };
 
 export default {
   name: "Products",
-  props: ["users"],
   data() {
-    return data;
+    return {
+      products: [],
+      loading: true,
+    };
   },
   components: {
-    ContentLoader,
     ProductList,
   },
   methods: {
@@ -172,10 +191,14 @@ export default {
       }
     },
   },
-};
 
-products
-  .where("stocks", ">", 0)
-  .get()
-  .then((ref) => convertRef(data, ref));
+  computed: {
+    onLoad() {
+      products
+        .where("stocks", ">", 0)
+        .get()
+        .then((ref) => convertRef(this, ref));
+    },
+  },
+};
 </script>

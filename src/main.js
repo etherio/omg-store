@@ -1,12 +1,23 @@
 import Vue from "vue";
 import router from "./router";
+import { auth } from "./firebase";
 import App from "./App.vue";
 
-const app = new Vue({
-  el: "#app",
-  router,
-  data: {
-    user: {},
-  },
-  render: (h) => h(App),
+const data = {
+  user: null,
+  loggedIn: false,
+  loaded: false,
+};
+
+auth.onAuthStateChanged((user) => {
+  if ((data.loggedIn = Boolean(user))) {
+    data.user = user.toJSON();
+  }
+  data.loaded = true;
 });
+
+const app = new Vue({
+  router,
+  data,
+  render: (h) => h(App),
+}).$mount("#app");

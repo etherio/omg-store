@@ -1,5 +1,5 @@
 <template>
-  <main v-if="loaded">
+  <main>
     <div class="ui fixed inverted menu">
       <div class="ui container">
         <a href="#" class="header item">OMG</a>
@@ -7,48 +7,33 @@
         <router-link to="/products" class="item">Products</router-link>
         <!-- <router-link to="/outofstocks" class="item">Out of stocks</router-link> -->
         <div class="right menu">
-            <a href="#" class="item bold" @click="signOut()">Logout</a>
-          </div>
+          <a v-if="$root.loggedIn" class="item bold" @click="signOut()">
+            <i class="sign-out icon"></i>
+          </a>
         </div>
       </div>
     </div>
-    <div class="ui main container">
-      <div v-if="loggedIn">
-        <router-view :user="user"></router-view>
-      </div>
-      <div v-else class="ui login container">
-        <LoginForm />
+    <div class="ui main container" v-if="$root.loaded">
+      <router-view v-if="$root.loggedIn" />
+      <LoginForm v-else />
+    </div>
+    <div v-else class="main">
+      <div class="ui active inverted dimmer">
+        <div class="ui large loader"></div>
       </div>
     </div>
   </main>
 </template>
 
 <script>
-import { auth } from "./firebase";
 import LoginForm from "./components/LoginForm";
-import Dashboard from "./components/Dashboard";
-
-const data = {
-  user: null,
-  loggedIn: false,
-  loaded: false,
-};
-
-auth.onAuthStateChanged((user) => {
-  if ((data.loggedIn = Boolean(user))) {
-    data.user = user.toJSON();
-  }
-  data.loaded = true;
-});
+import { auth } from "./firebase";
 
 export default {
-  data() {
-    return data;
-  },
   components: {
     LoginForm,
-    Dashboard,
   },
+
   methods: {
     signOut() {
       auth.signOut();
@@ -62,20 +47,20 @@ body {
   background-color: #ffffff;
 }
 .ui.menu .item img.logo {
-  margin-right: 1.5em;
+  margin-right: 1.5rem;
 }
 .main.container {
-  margin-top: 7em;
+  margin-top: 4rem;
 }
 .login.container {
-  padding-top: 2em;
+  padding-top: 2rem;
 }
 .wireframe {
-  margin-top: 2em;
+  margin-top: 2rem;
 }
 .ui.footer.segment {
-  margin: 5em 0em 0em;
-  padding: 5em 0em;
+  margin: 5rem 0rem 0rem;
+  padding: 5rem 0rem;
 }
 .item {
   font-weight: normal !important;

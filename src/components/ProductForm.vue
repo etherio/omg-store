@@ -1,37 +1,52 @@
 <template>
-  <div>
-    <h2>Add Product</h2>
+  <div :load="onLoad">
     <form class="ui form" @submit.prevent="submitProduct">
-      <!-- product name field -->
-      <div class="required field">
-        <label for="name">Product Name</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          placeholder="Product Name"
-          autocomplete="off"
-          required
-        />
+      <h2 class="ui dividing header">Add Product</h2>
+      <div class="fields">
+        <!-- product name field -->
+        <div class="eleven wide required field">
+          <label for="product_name">Product Name</label>
+          <input
+            type="text"
+            id="product_name"
+            name="product_name"
+            placeholder="Name (Required)"
+            @keyup="generateProductCode($event)"
+            required
+          />
+        </div>
+        <!-- product code field -->
+        <div class="five wide required field">
+          <label for="product_code">Product Code</label>
+          <input
+            type="text"
+            id="product_code"
+            name="product_code"
+            placeholder="Code (Required)"
+            @keyup="convertProductCode($event)"
+            required
+          />
+        </div>
       </div>
       <!-- product price field -->
-      <div class="three fields">
-        <div class="required field">
+      <div class="fields">
+        <div class="five wide required field">
           <label for="price">Product Price</label>
-          <div class="ui right labeled input">
+          <div class="ui right labeled input field">
             <input
-              type="number"
+              type="tel"
               id="price"
               name="price"
-              placeholder="Kyats"
+              placeholder="Kyats (Required)"
               autocomplete="off"
+              @keyup="convertProductPrice($event)"
               required
             />
             <label for="price" class="ui label">MMK</label>
           </div>
         </div>
         <!-- product category field -->
-        <div class="field">
+        <div class="eight wide field">
           <label for="category">Catagory</label>
           <div class="ui search" id="category">
             <div class="ui icon input">
@@ -40,17 +55,46 @@
                 class="prompt"
                 name="category"
                 type="text"
-                placeholder="Product Category"
+                autocomplete="off"
+                placeholder="Not specified"
               />
             </div>
             <div class="results"></div>
           </div>
         </div>
       </div>
+      <div class="fields">
+        <!-- product category field -->
+        <div class="five wide field">
+          <label for="color">Color</label>
+          <div class="ui search" id="color">
+            <div class="ui icon input">
+              <i class="paint brush icon"></i>
+              <input
+                class="prompt"
+                name="color"
+                type="text"
+                placeholder="Not specified"
+                autocomplete="off"
+              />
+            </div>
+            <div class="results"></div>
+          </div>
+        </div>
+        <!-- product size field -->
+        <div class="four wide field">
+          <label for="size">Size</label>
+          <select class="ui selection dropdown" name="size" id="size">
+            <option value="">Not Specified</option>
+          </select>
+        </div>
+      </div>
       <!-- product age field -->
-      <div class="three fields">
-        <div class="field">
-          <div class="ui left labeled input">
+      <div class="fields">
+        <div class="four wide field">
+          <!-- product age - min field -->
+          <label for="age-group">From</label>
+          <div class="ui left labeled input field">
             <label for="minAge" class="ui label">min</label>
             <input
               type="tel"
@@ -58,11 +102,14 @@
               name="minAge"
               placeholder="Age Group"
               autocomplete="off"
+              @change="convertAgeGroup($event)"
             />
           </div>
         </div>
-        <div class="field">
-          <div class="ui left labeled input">
+        <!-- product age - max field -->
+        <div class="four wide field">
+          <label for="age-group">To</label>
+          <div class="ui left labeled input field">
             <label for="maxAge" class="ui label">max</label>
             <input
               type="tel"
@@ -70,9 +117,19 @@
               name="maxAge"
               placeholder="Age Group"
               autocomplete="off"
+              @change="convertAgeGroup($event)"
             />
           </div>
         </div>
+      </div>
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          placeholder="[Optional]"
+          rows="4"
+        ></textarea>
       </div>
       <!-- product images upload file -->
       <div class="field">
@@ -87,7 +144,8 @@
           type="file"
           name="images"
           id="images"
-          accept="image/png,image/jgp,image/jpeg"
+          accept="image/*"
+          multiple
           @change="previewImages($event)"
         />
       </div>
@@ -100,19 +158,31 @@
 <script>
 import { database, products, storage } from "@/firebase";
 
+const meta = {
+  categories: [],
+  colors: [],
+  sizes: [],
+};
+
 const data = {
+  convertedManually: false,
   resetImage: () => null,
 };
 
-let categories = [];
+function capitalize(word) {
+  return `${word.substr(0, 1).toUpperCase()}${word.substr(1)}`;
+}
 
-const createProduct = (uid, createdAt, elements, onComplete) => {
+const createProduct = ({ uid, createdAt, elements, onComplete }) => {
   let product = {
     uid,
-    name: elements.name.value,
-    category: elements.category.value,
-    description: "", // elements.description.value,
-    price: Number(elements.price.value),
+    name: elements.product_name.value,
+    code: elements.product_code.value,
+    category: capitalize(elements.category.value),
+    color: capitalize(elements.color.value),
+    size: elements.size.value,
+    description: elements.description.value,
+    price: Number(elements.price.value.replace(/,/gm, "")),
     stocks: 0,
     createdAt: createdAt.getTime(),
     minAge: Number(elements.minAge.value),
@@ -120,22 +190,35 @@ const createProduct = (uid, createdAt, elements, onComplete) => {
     images: [],
   };
 
+  console.log("initial", product);
+
   let saveToFirebase = (product) => {
-    if (product.category && !categories.includes(product.category)) {
-      categories.push(product.category);
-      database.update({
-        categories,
-      });
-      $("#category").search({
-        source: categories.map((category) => {
-          return { title: category };
-        }),
-      });
+    let updatedMeta = false;
+    if (product.category && !meta.categories.includes(product.category)) {
+      meta.categories.push({ title: product.category });
+      updatedMeta = true;
     }
-    products
-      .doc()
-      .set(product)
-      .then(() => onComplete());
+    if (product.size && !meta.sizes.includes(product.size)) {
+      meta.sizes.push({ title: product.size });
+      updatedMeta = true;
+    }
+    if (product.color && !meta.colors.includes(product.color)) {
+      meta.colors.push({ title: product.color });
+      updatedMeta = true;
+    }
+    if (updatedMeta) {
+      database.update(meta).then(() =>
+        products
+          .doc()
+          .set(product)
+          .then(() => onComplete())
+      );
+    } else {
+      products
+        .doc()
+        .set(product)
+        .then(() => onComplete());
+    }
   };
 
   if (elements.images.files.length) {
@@ -163,6 +246,7 @@ const createProduct = (uid, createdAt, elements, onComplete) => {
           loaded++;
           product.images.push(path);
           if (elements.images.files.length === loaded) {
+            console.log("saved", product);
             return saveToFirebase(product);
           }
         });
@@ -171,6 +255,38 @@ const createProduct = (uid, createdAt, elements, onComplete) => {
     saveToFirebase(product);
   }
 };
+
+function updateMeta({ categories, sizes, colors }) {
+  let options = {
+    showNoResults: false,
+    minCharacters: 0,
+  };
+
+  if (categories instanceof Array) {
+    meta.categories = categories;
+    $("#category").search({
+      source: categories,
+      ...options,
+    });
+  }
+
+  if (sizes instanceof Array) {
+    meta.sizes = sizes;
+    sizes.unshift({ name: "Not specified", value: "" });
+    $("#size").dropdown({
+      values: sizes,
+      selectFirstResult: true,
+    });
+  }
+
+  if (colors instanceof Array) {
+    meta.colors = colors;
+    $("#color").search({
+      source: colors,
+      ...options,
+    });
+  }
+}
 
 export default {
   name: "ProductForm",
@@ -187,41 +303,101 @@ export default {
         return this.resetImage();
       }
       let reader = new FileReader();
-      let placeholder = el.innerHTML;
-      this.resetImage = () => (el.innerHTML = placeholder);
-      reader.onload = (event) =>
-        (el.innerHTML = `<img class="ui small image bordered centered" src="${event.target.result}" />`);
+      if (!this.resetImage) {
+        let placeholder = el.innerHTML;
+        this.resetImage = () => (el.innerHTML = placeholder);
+      }
+      reader.onload = (event) => {
+        el.innerHTML = `<img class="ui small image bordered centered" src="${event.target.result}" />`;
+      };
       reader.readAsDataURL(files[0]);
     },
 
     submitProduct(event) {
-      event.target.classList.add("loading");
+      let target = event.target;
+      target.classList.add("loading");
       fetch(
         "https://ethereal-demo-link.netlify.app/.netlify/functions/timestamp"
       )
         .then((res) => res.text())
         .then((timestamp) => {
+          let onComplete = () => {
+            this.resetImage();
+            loader.remove();
+            target.reset();
+            target.classList.remove("loading");
+          };
           let now = new Date();
           now.setTime(timestamp);
 
-          createProduct(this.$attrs.uid, now, event.target.elements, () => {
-            this.resetImage();
-            event.target.classList.remove("loading");
-            event.target.reset();
+          createProduct({
+            uid: this.$root.user.uid,
+            createdAt: now,
+            elements: target.elements,
+            onComplete,
           });
         });
     },
+
+    generateProductCode(event) {
+      if (data.convertedManually) {
+        return;
+      }
+      let letterStart, letterMiddle, letterEnd, productCode;
+      productCode = document.querySelector("#product_code");
+      if (!event.target.value) {
+        return (productCode.value = "");
+      }
+      let value = event.target.value;
+      let words = value.replace(/[^a-zA-Z]/gm, "").toUpperCase();
+      let digits = value.replace(/\D/gm, "").substr(-6, 6) || "001";
+
+      if (digits.length < 3) {
+        digits = "0".repeat(3 - digits.length) + digits;
+      }
+
+      letterStart = words.substr(0, 1);
+      letterMiddle = words.substr(Math.round(words.length / 2) - 1, 1);
+      letterEnd = words.substr(words.length - 1, 1);
+
+      if (productCode) {
+        productCode.value = `${letterStart}${letterMiddle}${letterEnd}-${digits}`;
+      }
+    },
+
+    convertProductCode(event) {
+      let value = event.target.value;
+      data.convertedManually = true;
+      event.target.value = value.toUpperCase().replace(/(\s|[^\w\d\-])/gm, "");
+    },
+
+    convertProductPrice(event) {
+      let value = Number(event.target.value.replace(/,/gm, "")) || null;
+      if (value !== null) {
+        event.target.value = value.toLocaleString();
+        event.target.parentElement.classList.remove("error");
+      } else {
+        event.target.parentElement.classList.add("error");
+      }
+    },
+
+    convertAgeGroup(event) {
+      let value = Number(event.target.value) || null;
+      if (value !== null) {
+        event.target.value = value.toFixed(1);
+        event.target.parentElement.classList.remove("error");
+      } else {
+        event.target.parentElement.classList.add("error");
+      }
+    },
+  },
+
+  computed: {
+    onLoad() {
+      database.get().then((ref) => updateMeta(ref.data()));
+    },
   },
 };
-
-database.get().then((ref) => {
-  categories = ref.data().categories;
-  $("#category").search({
-    source: categories.map((category) => {
-      return { title: category };
-    }),
-  });
-});
 </script>
 
 <style>
