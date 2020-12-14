@@ -10,8 +10,11 @@ const data = {
 };
 
 auth.onAuthStateChanged((user) => {
-  if ((data.loggedIn = Boolean(user))) {
+  data.loggedIn = Boolean(user);
+  if (data.loggedIn) {
     data.user = user.toJSON();
+  } else {
+    data.user = null;
   }
   data.loaded = true;
 });

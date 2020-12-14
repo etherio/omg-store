@@ -1,8 +1,9 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import Home from "@/views/Home.vue";
-import Products from "@/views/Products.vue";
-import OutOfStocks from "@/views/OutOfStocks.vue";
+import Home from "@/views/Home";
+import Products from "@/views/Products";
+import OutOfStocks from "@/views/OutOfStocks";
+import SearchProducts from "@/views/SearchProducts";
 
 Vue.use(VueRouter);
 
@@ -21,6 +22,11 @@ const routes = [
     path: "/outofstocks",
     name: "OutOfStocks",
     component: OutOfStocks,
+  },
+  {
+    path: "/search",
+    name: "SearchProducts",
+    component: SearchProducts,
   },
 ];
 

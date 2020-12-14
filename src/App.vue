@@ -1,20 +1,26 @@
 <template>
   <main>
-    <div class="ui fixed inverted menu">
+    <nav class="ui fixed inverted menu">
       <div class="ui container">
         <a href="#" class="header item">OMG</a>
         <router-link to="/" class="item">Home</router-link>
         <router-link to="/products" class="item">Products</router-link>
-        <!-- <router-link to="/outofstocks" class="item">Out of stocks</router-link> -->
-        <div class="right menu">
-          <a v-if="$root.loggedIn" class="item bold" @click="signOut()">
+        <router-link to="/search" class="item">Search</router-link>
+        <div class="right menu" v-if="$root.loggedIn">
+          <img
+            class="ui avatar image"
+            v-if="$root.user.photoURL"
+            :src="$root.user.photoURL"
+          />
+          <span>{{ $root.user.displayName }}</span>
+          <a class="logout item bold" @click="signOut()">
             <i class="sign-out icon"></i>
           </a>
         </div>
       </div>
-    </div>
+    </nav>
     <div class="ui main container" v-if="$root.loaded">
-      <router-view v-if="$root.loggedIn" />
+      <router-view v-if="$root.loggedIn"></router-view>
       <LoginForm v-else />
     </div>
     <div v-else class="main">
@@ -46,7 +52,7 @@ export default {
 body {
   background-color: #ffffff;
 }
-.ui.menu .item img.logo {
+nav .ui.menu .item img.logo {
   margin-right: 1.5rem;
 }
 .main.container {
@@ -62,11 +68,26 @@ body {
   margin: 5rem 0rem 0rem;
   padding: 5rem 0rem;
 }
-.item {
+nav .item {
   font-weight: normal !important;
 }
-.router-link-exact-active {
+nav .router-link-exact-active {
   font-weight: bold !important;
   color: #ffffff8f !important;
+}
+nav .right.menu img {
+  margin-top: 5px;
+}
+nav .right.menu span {
+  padding: 10px 5px 0 10px;
+  color: #ffffff;
+  cursor: default;
+  text-overflow: ellipsis;
+  width: 110px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+nav .logout i {
+  padding-top: 2px;
 }
 </style>

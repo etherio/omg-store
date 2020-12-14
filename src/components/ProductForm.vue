@@ -1,5 +1,5 @@
 <template>
-  <div :load="onLoad">
+  <div :load="onLoad" class="product-create-form">
     <form class="ui form" @submit.prevent="submitProduct">
       <h2 class="ui dividing header">Add Product</h2>
       <div class="fields">
@@ -46,7 +46,7 @@
           </div>
         </div>
         <!-- product category field -->
-        <div class="eight wide field">
+        <div class="six wide field">
           <label for="category">Catagory</label>
           <div class="ui search" id="category">
             <div class="ui icon input">
@@ -62,8 +62,6 @@
             <div class="results"></div>
           </div>
         </div>
-      </div>
-      <div class="fields">
         <!-- product category field -->
         <div class="five wide field">
           <label for="color">Color</label>
@@ -80,13 +78,6 @@
             </div>
             <div class="results"></div>
           </div>
-        </div>
-        <!-- product size field -->
-        <div class="four wide field">
-          <label for="size">Size</label>
-          <select class="ui selection dropdown" name="size" id="size">
-            <option value="">Not Specified</option>
-          </select>
         </div>
       </div>
       <!-- product age field -->
@@ -161,12 +152,13 @@ import { database, products, storage } from "@/firebase";
 const meta = {
   categories: [],
   colors: [],
-  sizes: [],
 };
 
 const data = {
   convertedManually: false,
-  resetImage: () => null,
+  resetImage: () =>
+    (document.querySelector(".image.placeholder.segment").innerHTML =
+      '<div class="ui icon header"><i class="file image outline icon"></i> Upload an image </div>'),
 };
 
 function capitalize(word) {
@@ -175,50 +167,45 @@ function capitalize(word) {
 
 const createProduct = ({ uid, createdAt, elements, onComplete }) => {
   let product = {
-    uid,
-    name: elements.product_name.value,
-    code: elements.product_code.value,
     category: capitalize(elements.category.value),
+    code: elements.product_code.value,
     color: capitalize(elements.color.value),
-    size: elements.size.value,
+    createdAt: createdAt.getTime(),
     description: elements.description.value,
+    images: [],
+    maxAge: Number(elements.maxAge.value) || 0,
+    minAge: Number(elements.minAge.value) || 0,
+    name: elements.product_name.value,
     price: Number(elements.price.value.replace(/,/gm, "")),
     stocks: 0,
-    createdAt: createdAt.getTime(),
-    minAge: Number(elements.minAge.value),
-    maxAge: Number(elements.maxAge.value),
-    images: [],
+    uid,
   };
 
-  console.log("initial", product);
-
   let saveToFirebase = (product) => {
-    let updatedMeta = false;
-    if (product.category && !meta.categories.includes(product.category)) {
+    let updated = false;
+    if (
+      product.category &&
+      meta.categories.filter(({ title }) => title === product.category).length
+    ) {
+      updated = true;
       meta.categories.push({ title: product.category });
-      updatedMeta = true;
     }
-    if (product.size && !meta.sizes.includes(product.size)) {
-      meta.sizes.push({ title: product.size });
-      updatedMeta = true;
-    }
-    if (product.color && !meta.colors.includes(product.color)) {
+    if (product.color && !meta.colors.includes({ color: product.color })) {
+      updated = true;
       meta.colors.push({ title: product.color });
-      updatedMeta = true;
     }
-    if (updatedMeta) {
-      database.update(meta).then(() =>
-        products
+    updateMeta(meta);
+    updated
+      ? database.update(meta).then(() =>
+          products
+            .doc()
+            .set(product)
+            .then(() => onComplete())
+        )
+      : products
           .doc()
           .set(product)
-          .then(() => onComplete())
-      );
-    } else {
-      products
-        .doc()
-        .set(product)
-        .then(() => onComplete());
-    }
+          .then(() => onComplete());
   };
 
   if (elements.images.files.length) {
@@ -263,24 +250,25 @@ function updateMeta({ categories, sizes, colors }) {
   };
 
   if (categories instanceof Array) {
-    meta.categories = categories;
+    var __tmp = [];
+    meta.categories = categories
+      .filter(({ title }) =>
+        __tmp.includes(title) ? false : __tmp.push(title)
+      )
+      .sort((a, b) => a.title.charCodeAt() - b.title.charCodeAt());
     $("#category").search({
       source: categories,
       ...options,
     });
   }
 
-  if (sizes instanceof Array) {
-    meta.sizes = sizes;
-    sizes.unshift({ name: "Not specified", value: "" });
-    $("#size").dropdown({
-      values: sizes,
-      selectFirstResult: true,
-    });
-  }
-
   if (colors instanceof Array) {
-    meta.colors = colors;
+    var __tmp = [];
+    meta.colors = colors
+      .filter(({ title }) =>
+        __tmp.includes(title) ? false : __tmp.push(title)
+      )
+      .sort((a, b) => a.title.charCodeAt() - b.title.charCodeAt());
     $("#color").search({
       source: colors,
       ...options,
@@ -303,10 +291,6 @@ export default {
         return this.resetImage();
       }
       let reader = new FileReader();
-      if (!this.resetImage) {
-        let placeholder = el.innerHTML;
-        this.resetImage = () => (el.innerHTML = placeholder);
-      }
       reader.onload = (event) => {
         el.innerHTML = `<img class="ui small image bordered centered" src="${event.target.result}" />`;
       };
@@ -422,5 +406,9 @@ input[type="file"] {
 
 form {
   margin-bottom: 20px;
+}
+
+.product-create-form {
+  padding-top: 20px;
 }
 </style>

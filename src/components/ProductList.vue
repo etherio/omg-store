@@ -1,6 +1,6 @@
 <template>
   <div class="item">
-    <div class="image">
+    <div class="image" v-if="photoURL">
       <img :src="photoURL" alt="product" />
     </div>
     <div class="content">
@@ -13,6 +13,8 @@
         <small>Created at {{ new Date(createdAt).toLocaleString() }}</small>
         <p>{{ description }}</p>
       </div>
+      <div class="ui label" v-if="minAge">from {{ minAge }} yrs.</div>
+      <div class="ui label" v-if="maxAge">to {{ maxAge }} yrs.</div>
       <div class="ui blue label" v-if="category">{{ category }}</div>
       <div class="ui label" :class="color.toLowerCase()" v-if="color">
         {{ color }}
@@ -39,6 +41,8 @@ export default {
     "category",
     "size",
     "color",
+    "minAge",
+    "maxAge",
   ],
 };
 </script>

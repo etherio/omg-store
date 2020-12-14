@@ -16,7 +16,7 @@
         class="ui divided items"
         :key="product.id"
       >
-        <ProductList
+        <product-list
           :name="product.name"
           :description="product.description"
           :price="product.price"
@@ -43,7 +43,7 @@
               Sold
             </button>
           </div>
-        </ProductList>
+        </product-list>
         <hr />
       </div>
     </div>
@@ -80,7 +80,7 @@
 </template>
 
 <script>
-import ProductList from "@/components/ProductList.vue";
+import ProductList from "@/components/ProductList";
 import { products, storage } from "@/firebase";
 
 let productRefs = {};

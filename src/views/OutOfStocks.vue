@@ -18,7 +18,7 @@
         class="ui divided items"
         :key="product.id"
       >
-        <ProductList
+        <product-list
           :name="product.name"
           :description="product.description"
           :price="product.price"
@@ -36,21 +36,14 @@
               Add
             </button>
             <button
-              class="ui primary basic button"
-              @click="soldOut($event, product.id)"
-            >
-              <i class="left dolly icon"></i>
-              Sold
-            </button>
-            <button
               class="ui red button"
               @click="deleteProduct($event, product.id)"
             >
-              <i class="left edit icon"></i>
-              Edit
+              <i class="left trash alternate icon"></i>
+              Delete
             </button>
           </div>
-        </ProductList>
+        </product-list>
       </div>
     </div>
     <div v-else>
@@ -86,7 +79,7 @@
 </template>
 
 <script>
-import ProductList from "@/components/ProductList.vue";
+import ProductList from "@/components/ProductList";
 import { products, storage } from "@/firebase";
 
 let productRefs = {};
@@ -149,29 +142,7 @@ export default {
         el.removeAttribute("disabled");
       }
     },
-    soldOut(event, id) {
-      let el = event.target;
-      if (el.classList.contains("icon")) {
-        el = el.parentElement;
-      }
-      try {
-        let ref = productRefs[id];
-        if (!ref) {
-          return;
-        }
-        el.classList.add("loading");
-        el.setAttribute("disabled", true);
-        ref.update({ stocks: ref.data.stocks - 1 }).then(() => {
-          ref.data.stocks--;
-          el.classList.remove("loading");
-          el.removeAttribute("disabled");
-        });
-      } catch (e) {
-        el.classList.remove("loading");
-        el.removeAttribute("disabled");
-        console.error(e);
-      }
-    },
+
     deleteProduct(event, id) {
       let el = event.target;
       if (el.classList.contains("icon")) {
